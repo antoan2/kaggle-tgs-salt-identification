@@ -1,0 +1,7 @@
+version: '3'
+services:
+    learning-tool:
+        build: learning-tool
+        volumes:
+            - $PATH_DATA:/data
+            - ./learning-tool/src:/opt/learning-tool
