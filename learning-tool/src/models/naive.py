@@ -6,9 +6,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
 
-class First(nn.Module):
+
+class Naive(nn.Module):
     def __init__(self):
-        super(First, self).__init__()
+        super(Naive, self).__init__()
         # self.maxpool = nn.MaxPool2d(2, padding=1)
         self.activation = nn.LeakyReLU(inplace=True)
         self.conv1 = nn.Conv2d(1, 32, kernel_size=11, padding=5)
