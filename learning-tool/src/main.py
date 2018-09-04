@@ -3,11 +3,11 @@
 import os
 import time
 import shutil
+import random
 from collections import defaultdict
 
 import matplotlib
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 
 from skimage import io
 import numpy as np
@@ -15,93 +15,35 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torchvision
 
-from dataset.tgs_salt_dataset import TgsSaltDataset
-from dataset.tgs_transforms import ToTensor, RandomHorizontalFlip, RandomVerticalFlip
+from utils.datasets import getTgsDataset
+from utils.display import show_batch
+from utils.submission import create_submission_file
+from utils.evaluation import get_iou_vector
 
-# from models.fcn import FCN
-from models.first import First
+from models.naive import Naive
 
-
-def show_batch(sample_batched, predictions=None):
-
-    fig = plt.figure()
-    if predictions is None:
-        fig.add_subplot(211)
-    else:
-        fig.add_subplot(311)
-    grid_images = torchvision.utils.make_grid(sample_batched['image'], normalize=True)
-    plt.imshow(grid_images.numpy().transpose((1, 2, 0)))
-
-    if predictions is None:
-        fig.add_subplot(212)
-    else:
-        fig.add_subplot(312)
-    grid_masks = torchvision.utils.make_grid(sample_batched['mask'][:, np.newaxis, ...])
-    grid_masks = grid_masks.numpy()
-    plt.imshow(grid_masks.transpose((1, 2, 0)))
-
-    if predictions is not None:
-        fig.add_subplot(313)
-        predictions = predictions.detach()
-        predictions = (predictions[:, 0, ...] <= predictions[:, 1, ...])
-        grid_predictions = torchvision.utils.make_grid(predictions[:, np.newaxis, ...])
-        grid_predictions = grid_predictions.cpu().numpy().astype(np.float)
-        plt.imshow(grid_predictions.transpose((1, 2, 0)))
-    plt.savefig('./test.png')
-    plt.close()
-
-
-def check_same_depth():
-    # Getting depths
-    with open('/data/depths.csv') as file_id:
-        file_id.readline()
-        depths = defaultdict(list)
-        for line in file_id:
-            filename, depth = line.strip().split(',')
-            depths[int(depth)].append(filename)
-    # Getting train examples
-    train_filenames = [filename[:-4] for filename in os.listdir('/data/train/images')]
-    test_filenames = [filename[:-4] for filename in os.listdir('/data/test/images')]
-    os.mkdir('temp_folder')
-    for depth, filenames in depths.items():
-        os.mkdir(os.path.join('temp_folder', str(depth)))
-        for filename in filenames:
-            if filename in train_filenames:
-                shutil.copyfile('/data/train/images/%s.png' % filename, os.path.join('temp_folder', str(depth), filename + '.png'))
-            else:
-                shutil.copyfile('/data/test/images/%s.png' % filename, os.path.join('temp_folder', str(depth), filename + '.png'))
-
-
-
-    return depths, train_filenames
-
-
+SUBMISSION = True
 
 if __name__ == "__main__":
-    tgs_dataset = TgsSaltDataset(
-        root_dir='/data',
-        transform=torchvision.transforms.Compose([
-            RandomHorizontalFlip(),
-            RandomVerticalFlip(),
-            ToTensor()]))
-    dataloader = torch.utils.data.DataLoader(
-        tgs_dataset, batch_size=16, shuffle=True, num_workers=1)
+
+    dataset_train, dataloader_train = getTgsDataset('train', batch_size=16)
+    dataset_validation, dataloader_validation = getTgsDataset(
+        'validation', batch_size=128)
 
     if torch.cuda.is_available():
-        model = First()
+        model = Naive()
         model = model.cuda()
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.0001)
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
     print_period = 40
-    n_epoches = 20
-
+    n_epoches = 5
 
     for epoch in range(n_epoches):
         running_loss = 0.0
-        for i, (sample) in enumerate(dataloader):
+        t_start = time.time()
+        for i, (sample) in enumerate(dataloader_train):
 
             output = model(sample['image'].cuda())
             loss = criterion(output, sample['mask'].cuda().long())
@@ -111,8 +53,26 @@ if __name__ == "__main__":
 
             # print statistics
             running_loss += loss.item()
-            if i % print_period == (print_period - 1):    # print every 2000 mini-batches
-                print('[%d, %5d] loss: %.3f' %
-                      (epoch + 1, i + 1, running_loss / print_period))
+            if i % print_period == (
+                    print_period - 1):  # print every 2000 mini-batches
+                t_end = time.time()
+                print('[%d, %5d] loss: %.3f elapsed time: %.3f' %
+                      (epoch + 1, i + 1, running_loss / print_period,
+                       (t_end - t_start) / print_period))
                 running_loss = 0.0
+                t_start = time.time()
         show_batch(sample, output)
+
+        scores = []
+        for i, (sample) in enumerate(dataloader_validation):
+            outputs = model(sample['image'].cuda()).detach()
+            predictions = (outputs[:, 0, ...] <= outputs[:, 1, ...])
+            scores.append(get_iou_vector(sample['mask'].cpu().numpy(), predictions.cpu().numpy()))
+        print('Final Score', np.mean(scores))
+
+    if SUBMISSION == True:
+        # Create prediction file
+        test_batch_size = 64
+        dataset_test, dataloader_test = getTgsDataset(
+            'test', batch_size=test_batch_size)
+        create_submission_file(model, dataloader_test)

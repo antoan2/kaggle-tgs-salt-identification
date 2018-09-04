@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+import numpy as np
+
+
+def create_submission_file(model, dataloader, p_file='./predictions.txt'):
+    results = {}
+    for i, (samples) in enumerate(dataloader):
+        output = model(samples['image'].cuda())
+        results_batch = get_encoded_results_batch(samples, output)
+        results.update(results_batch)
+    write_results_file(results, p_file)
+
+
+def get_encoded_results_batch(samples, output):
+    results = {}
+    predictions = output.detach()
+    predictions = (predictions[:, 0, ...] >= predictions[:, 1, ...])
+    for i, (image_name, prediction) in enumerate(
+            zip(samples['image_name'], predictions)):
+        results[image_name] = get_encoded_results(prediction)
+    return results
+
+
+def get_encoded_results(prediction):
+    rle_code = rle_encode(prediction.cpu().numpy())
+    return rle_code
+
+
+def rle_encode(im):
+    '''
+    im: numpy array, 1 - mask, 0 - background
+    Returns run length as string formated
+    '''
+    pixels = im.flatten()
+    pixels = np.concatenate([[0], pixels, [0]])
+    runs = np.where(pixels[1:] != pixels[:-1])[0] + 1
+    runs[1::2] -= runs[::2]
+    return ' '.join(str(x) for x in runs)
+
+
+def write_results_file(results, p_file):
+    with open(p_file, 'w') as file_id:
+        file_id.write('id,rle_mask\n')
+        for filename, rle_code in results.items():
+            file_id.write('{filename},{rle_code}\n'.format(
+                filename=filename, rle_code=rle_code))
