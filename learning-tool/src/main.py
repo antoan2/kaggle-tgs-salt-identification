@@ -23,9 +23,7 @@ from utils.submission import create_submission_file
 from utils.evaluation import get_iou_vector
 
 from models.naive import Naive
-from models.fcn import *
 from models.linknet import LinkNet
-import losses.lovasz_losses as L
 
 SUBMISSION = True
 
@@ -36,20 +34,8 @@ if __name__ == "__main__":
         'validation', batch_size=16)
 
     if torch.cuda.is_available():
-        # model = Naive()
-        # model = fcn8s(2)
         model = LinkNet(n_classes=2)
     model.cuda()
-    # model.eval()
-
-    """
-    vgg16 = torch_models.vgg16(pretrained=False)
-    vgg16_state = torch.load('/models/vgg16-397923af.pth')
-    vgg16.load_state_dict(vgg16_state)
-    model.init_vgg16_params(vgg16)
-    model = model.cuda()
-    del vgg16
-    """
 
     print_period = 40
     n_epoches = 10
@@ -63,10 +49,10 @@ if __name__ == "__main__":
         print(optimizer.param_groups[0]['lr'])
         running_loss = 0.0
         t_start = time.time()
-        for i, (sample) in enumerate(dataloader_train):
+        for i, samples in enumerate(dataloader_train):
 
-            outputs = model(sample['image'].cuda())
-            loss = criterion(outputs, sample['mask'].cuda().long())
+            outputs = model(samples['image'].cuda())
+            loss = criterion(outputs, samples['mask'].cuda().long())
             model.zero_grad()
             loss.backward()
             optimizer.step()
@@ -83,17 +69,17 @@ if __name__ == "__main__":
 
             predictions = []
 
-        predictions = (outputs[:, 1, ...] > outputs[:, 0, ...])
-        show_batch(sample, predictions[:, np.newaxis, ...])
+        predictions = model.get_predictions(outputs)
+        show_batch(samples, predictions[:, np.newaxis, ...])
 
         scores = []
-        for i, (sample) in enumerate(dataloader_validation):
-            outputs = model(sample['image'].cuda()).detach()
+        for i, samples in enumerate(dataloader_validation):
+            outputs = model(samples['image'].cuda()).detach()
             outputs = outputs[:, :, 14:-13, 14:-13]
-            predictions = (outputs[:, 1, ...] > outputs[:, 0, ...])
-            mask = sample['mask'].cpu().numpy()
-            mask = mask[:, 14:-13, 14:-13]
-            scores.append(get_iou_vector(mask, predictions.cpu().numpy()))
+            predictions = model.get_predictions(outputs)
+            masks = samples['mask'].cpu().numpy()
+            masks = masks[:, 14:-13, 14:-13]
+            scores.append(get_iou_vector(masks, predictions.cpu().numpy()))
         print('Final Score', np.mean(scores))
 
     if SUBMISSION == True:

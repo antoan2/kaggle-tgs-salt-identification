@@ -149,6 +149,10 @@ class LinkNet(nn.Module):
 
         return y
 
+    def get_predictions(self, outputs):
+        return (outputs[:, 1, ...] > outputs[:, 0, ...])
+
+
 class LinkNetBase(nn.Module):
     """
     Generate model architecture
