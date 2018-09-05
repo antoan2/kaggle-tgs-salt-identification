@@ -6,18 +6,17 @@ from tqdm import tqdm
 
 def create_submission_file(model, dataloader, p_file='./predictions.csv'):
     results = {}
-    for i, (samples) in tqdm(enumerate(dataloader)):
-        outputs = model(samples['image'].cuda())
+    for i, samples in tqdm(enumerate(dataloader)):
+        outputs = model(samples['image'].cuda()).detach()
         outputs = outputs[:, :, 14:-13, 14:-13]
-        results_batch = get_encoded_results_batch(samples, outputs)
+        predictions = model.get_predictions(outputs)
+        results_batch = get_encoded_results_batch(samples, predictions)
         results.update(results_batch)
     write_results_file(results, p_file)
 
 
-def get_encoded_results_batch(samples, outputs):
+def get_encoded_results_batch(samples, predictions):
     results = {}
-    predictions = outputs.detach()
-    predictions = (outputs[:, 1, ...] > outputs[:, 0, ...])
     for i, (image_name, prediction) in enumerate(
             zip(samples['image_name'], predictions)):
         results[image_name] = get_encoded_results(prediction)
