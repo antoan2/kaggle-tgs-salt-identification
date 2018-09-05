@@ -6,6 +6,7 @@ import torch
 from dataset.tgs_salt_dataset import TgsSaltDataset
 from dataset.tgs_transforms import ToTensor, RandomHorizontalFlip, RandomVerticalFlip, RefractBorders
 
+NUM_WORKERS=1
 
 def getTgsDataset(dataset, batch_size=16):
     if dataset == 'train':
@@ -27,7 +28,7 @@ def getTgsDatasetTrain(batch_size):
             ToTensor()
         ]))
     dataloader = torch.utils.data.DataLoader(
-        dataset, batch_size=batch_size, shuffle=True, num_workers=1)
+        dataset, batch_size=batch_size, shuffle=True, num_workers=NUM_WORKERS)
     return dataset, dataloader
 
 
@@ -38,7 +39,7 @@ def getTgsDatasetValidation(batch_size):
         transform=torchvision.transforms.Compose(
             [RefractBorders(), ToTensor()]))
     dataloader = torch.utils.data.DataLoader(
-        dataset, batch_size=batch_size, num_workers=4)
+        dataset, batch_size=batch_size, num_workers=NUM_WORKERS)
     return dataset, dataloader
 
 
@@ -49,5 +50,5 @@ def getTgsDatasetTest(batch_size):
         transform=torchvision.transforms.Compose(
             [RefractBorders(), ToTensor()]))
     dataloader = torch.utils.data.DataLoader(
-        dataset, batch_size=batch_size, num_workers=4)
+        dataset, batch_size=batch_size, num_workers=NUM_WORKERS)
     return dataset, dataloader
