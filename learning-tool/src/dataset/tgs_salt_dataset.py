@@ -55,9 +55,8 @@ class TgsSaltDataset(torch.utils.data.Dataset):
 
         # We made the assumption that np.std(image, axis=2) == 0
         image = io.imread(path_image)
+        image = image.astype(np.uint8)
         image = image[:, :, 0]
-        image = image.astype(np.float32)
-        image = image[..., np.newaxis]
 
         # The mask images are uselesly loaded as uint16
         if self.dataset == 'test':
@@ -65,7 +64,7 @@ class TgsSaltDataset(torch.utils.data.Dataset):
         else:
             mask = io.imread(path_mask, as_gray=True)
             mask[mask != 0] = 1.
-            mask = mask.astype(np.float32)
+            mask = mask.astype(np.uint8)
 
         sample = {'image_name': filename, 'image': image, 'mask': mask}
 

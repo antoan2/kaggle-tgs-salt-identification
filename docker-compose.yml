@@ -5,3 +5,4 @@ services:
         volumes:
             - $PATH_DATA:/data
             - ./learning-tool/src:/opt/learning-tool
+            - $PATH_MODELS:/models

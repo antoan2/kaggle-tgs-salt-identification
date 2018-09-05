@@ -18,7 +18,7 @@ class Naive(nn.Module):
         self.conv4 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
         self.conv5 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
 
-        self.output = nn.Conv2d(64, 2, kernel_size=1)
+        self.output = nn.Conv2d(64, 1, kernel_size=1)
 
     def forward(self, x):
         x = self.conv1(x)

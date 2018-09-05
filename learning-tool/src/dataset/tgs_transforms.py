@@ -3,6 +3,7 @@
 import torch
 import numpy as np
 import random
+import skimage
 
 
 class RandomHorizontalFlip(object):
@@ -34,6 +35,24 @@ class RandomVerticalFlip(object):
         else:
             return sample
 
+class RefractBorders(object):
+
+    def __call__(self, sample):
+        image, mask = sample['image'], sample['mask']
+        image_name = sample['image_name']
+
+        image = skimage.util.pad(image, ((14, 13), (14, 13)), 'reflect')
+
+        if mask is None:
+            return {'image_name': image_name, 'image': image, 'mask': None}
+        else:
+            mask = skimage.util.pad(mask, ((14, 13), (14, 13)), 'reflect')
+            return {
+                'image_name': image_name,
+                'image': image,
+                'mask': mask
+            }
+
 
 class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
@@ -42,15 +61,17 @@ class ToTensor(object):
         image, mask = sample['image'], sample['mask']
         image_name = sample['image_name']
 
-        image = image.transpose((2, 0, 1))
+        # image /= 255.
+        image -= 125
+        image = image[np.newaxis, ...]
         # swap color axis because
         # numpy image: H x W x C
         # torch image: C X H X W
         if mask is None:
-            return {'image_name': image_name, 'image': torch.from_numpy(image)}
+            return {'image_name': image_name, 'image': torch.from_numpy(image).float()}
         else:
             return {
                 'image_name': image_name,
-                'image': torch.from_numpy(image),
-                'mask': torch.from_numpy(mask)
+                'image': torch.from_numpy(image).float(),
+                'mask': torch.from_numpy(mask).float()
             }
