@@ -23,9 +23,7 @@ from utils.submission import create_submission_file
 from utils.evaluation import get_iou_vector
 
 from models.naive import Naive
-from models.fcn import *
 from models.linknet import LinkNet
-import losses.lovasz_losses as L
 
 SUBMISSION = True
 
@@ -36,20 +34,8 @@ if __name__ == "__main__":
         'validation', batch_size=16)
 
     if torch.cuda.is_available():
-        # model = Naive()
-        # model = fcn8s(2)
         model = LinkNet(n_classes=2)
     model.cuda()
-    # model.eval()
-
-    """
-    vgg16 = torch_models.vgg16(pretrained=False)
-    vgg16_state = torch.load('/models/vgg16-397923af.pth')
-    vgg16.load_state_dict(vgg16_state)
-    model.init_vgg16_params(vgg16)
-    model = model.cuda()
-    del vgg16
-    """
 
     print_period = 40
     n_epoches = 10
