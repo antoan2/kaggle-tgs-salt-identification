@@ -33,11 +33,11 @@ class RefractBorders(object):
         image, mask = sample['image'], sample['mask']
 
         image = skimage.util.pad(image, ((14, 13), (14, 13)), 'reflect')
-        sample['image'] = image
+        sample['image'] = image.copy()
 
         if mask is not None:
             mask = skimage.util.pad(mask, ((14, 13), (14, 13)), 'reflect')
-            sample['mask'] = mask
+            sample['mask'] = mask.copy()
         return sample
 
 
@@ -56,5 +56,7 @@ class ToTensor(object):
         if mask is not None:
             mask = torch.from_numpy(mask).float()
             sample['mask'] = mask
-
-        return sample
+            return sample
+        else:
+            sample.pop('mask')
+            return sample
