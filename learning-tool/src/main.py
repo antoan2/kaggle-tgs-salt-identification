@@ -49,10 +49,10 @@ if __name__ == "__main__":
         print(optimizer.param_groups[0]['lr'])
         running_loss = 0.0
         t_start = time.time()
-        for i, (sample) in enumerate(dataloader_train):
+        for i, samples in enumerate(dataloader_train):
 
-            outputs = model(sample['image'].cuda())
-            loss = criterion(outputs, sample['mask'].cuda().long())
+            outputs = model(samples['image'].cuda())
+            loss = criterion(outputs, samples['mask'].cuda().long())
             model.zero_grad()
             loss.backward()
             optimizer.step()
@@ -69,17 +69,17 @@ if __name__ == "__main__":
 
             predictions = []
 
-        predictions = (outputs[:, 1, ...] > outputs[:, 0, ...])
-        show_batch(sample, predictions[:, np.newaxis, ...])
+        predictions = model.get_predictions(outputs)
+        show_batch(samples, predictions[:, np.newaxis, ...])
 
         scores = []
-        for i, (sample) in enumerate(dataloader_validation):
-            outputs = model(sample['image'].cuda()).detach()
+        for i, samples in enumerate(dataloader_validation):
+            outputs = model(samples['image'].cuda()).detach()
             outputs = outputs[:, :, 14:-13, 14:-13]
-            predictions = (outputs[:, 1, ...] > outputs[:, 0, ...])
-            mask = sample['mask'].cpu().numpy()
-            mask = mask[:, 14:-13, 14:-13]
-            scores.append(get_iou_vector(mask, predictions.cpu().numpy()))
+            predictions = model.get_predictions(outputs)
+            masks = samples['mask'].cpu().numpy()
+            masks = masks[:, 14:-13, 14:-13]
+            scores.append(get_iou_vector(masks, predictions.cpu().numpy()))
         print('Final Score', np.mean(scores))
 
     if SUBMISSION == True:
