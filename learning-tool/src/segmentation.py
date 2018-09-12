@@ -46,8 +46,8 @@ if __name__ == "__main__":
             if prediction == 0:
                 files_to_exclude.append(sample_name)
 
-
-    _, dataloader_train = getTgsDatasetTrain(16, 1, None, excluded_files=files_to_exclude)
+    _, dataloader_train = getTgsDatasetTrain(
+        16, 1, None, excluded_files=files_to_exclude)
     # 'validation', batch_size=16)
 
     if torch.cuda.is_available():
@@ -62,8 +62,10 @@ if __name__ == "__main__":
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.3)
 
     criterion = torch.nn.BCELoss()
-    _, dataloader_train = getTgsDatasetTrain(16, 10, 0, excluded_files=files_to_exclude)
-    _, dataloader_validation = getTgsDatasetValidation(16, 10, 0, excluded_files=files_to_exclude)
+    _, dataloader_train = getTgsDatasetTrain(
+        16, 10, 0, excluded_files=files_to_exclude)
+    _, dataloader_validation = getTgsDatasetValidation(
+        16, 10, 0, excluded_files=files_to_exclude)
 
     for epoch in range(n_epoches):
         scheduler.step()

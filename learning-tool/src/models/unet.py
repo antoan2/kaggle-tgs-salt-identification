@@ -4,6 +4,7 @@ from .unet_parts import *
 import torch
 from torchvision import transforms
 
+
 class UNet(nn.Module):
     def __init__(self, n_channels, n_classes):
         super(UNet, self).__init__()

@@ -59,7 +59,8 @@ class TgsSaltDataset(torch.utils.data.Dataset):
             self.create_splits()
 
     def check_folds(self):
-        if not os.path.isfile(self.get_fold_filename(self.n_folds, self.validation_fold)):
+        if not os.path.isfile(
+                self.get_fold_filename(self.n_folds, self.validation_fold)):
             self.create_folds()
 
     def get_index_filenames(self):
@@ -71,14 +72,20 @@ class TgsSaltDataset(torch.utils.data.Dataset):
             else:
                 return self.get_index_filenames_train()
 
-
     def get_index_filenames_test(self):
         path_set_file = os.path.join(self.path_splits, 'test.txt')
-        return [filename for filename in self.read_set_file(path_set_file) if filename not in self.excluded_files]
+        return [
+            filename for filename in self.read_set_file(path_set_file)
+            if filename not in self.excluded_files
+        ]
 
     def get_index_filenames_validation(self):
-        path_fold_file = self.get_fold_filename(self.n_folds, self.validation_fold)
-        return [filename for filename in self.read_set_file(path_fold_file) if filename not in self.excluded_files]
+        path_fold_file = self.get_fold_filename(self.n_folds,
+                                                self.validation_fold)
+        return [
+            filename for filename in self.read_set_file(path_fold_file)
+            if filename not in self.excluded_files
+        ]
 
     def get_index_filenames_train(self):
         filenames = []
@@ -88,16 +95,20 @@ class TgsSaltDataset(torch.utils.data.Dataset):
                 continue
             path_fold_file = self.get_fold_filename(self.n_folds, current_fold)
             filenames.extend(self.read_set_file(path_fold_file))
-        return [filename for filename in filenames if filename not in self.excluded_files]
+        return [
+            filename for filename in filenames
+            if filename not in self.excluded_files
+        ]
 
     def get_fold_filename(self, n_folds, fold):
-        path_fold_file = os.path.join(self.root_dir, 'splits',
-                             '_'.join(('folds', str(n_folds), str(fold)))  + '.txt')
+        path_fold_file = os.path.join(
+            self.root_dir, 'splits', '_'.join(
+                ('folds', str(n_folds), str(fold))) + '.txt')
         return path_fold_file
 
-
     def get_folds(self):
-        filenames = self.read_set_file(os.path.join(self.path_splits, 'train.txt'))
+        filenames = self.read_set_file(
+            os.path.join(self.path_splits, 'train.txt'))
 
         random.shuffle(filenames)
         return self.chunks(filenames, int(len(filenames) / self.n_folds))
@@ -156,7 +167,8 @@ class TgsSaltDataset(torch.utils.data.Dataset):
     def create_folds(self):
         for fold_idx, fold in enumerate(self.get_folds()):
             filenames = [filename for filename in fold]
-            self.write_filenames(filenames, self.get_fold_filename(self.n_folds, fold_idx))
+            self.write_filenames(
+                filenames, self.get_fold_filename(self.n_folds, fold_idx))
 
     def list_parse_filenames(self, path):
         return [os.path.splitext(filename)[0] for filename in os.listdir(path)]

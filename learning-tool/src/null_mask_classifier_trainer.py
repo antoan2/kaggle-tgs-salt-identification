@@ -22,6 +22,7 @@ from sklearn.metrics import accuracy_score
 PRINT_PERIOD = 40
 KFOLD_TRAINING = False
 
+
 def train(model, dataloader, optimizer, criterion, fold, epoch, scheduler,
           logger):
     scheduler.step()
@@ -40,12 +41,14 @@ def train(model, dataloader, optimizer, criterion, fold, epoch, scheduler,
                 PRINT_PERIOD - 1):  # print every 2000 mini-batches
             t_end = time.time()
             print('[%d, %d] loss: %.3f elapsed time: %.3f' %
-                  (fold, epoch * len(dataloader) + batch + 1, running_loss / PRINT_PERIOD,
+                  (fold, epoch * len(dataloader) + batch + 1,
+                   running_loss / PRINT_PERIOD,
                    (t_end - t_start) / PRINT_PERIOD))
             predictions = model.get_predictions(outputs)
 
-            logger.add_log(('train', 'loss', fold),
-                           (epoch * len(dataloader) + batch, running_loss / PRINT_PERIOD))
+            logger.add_log(
+                ('train', 'loss', fold),
+                (epoch * len(dataloader) + batch, running_loss / PRINT_PERIOD))
             logger.add_log(('train', 'accuracy', fold),
                            (epoch * len(dataloader) + batch,
                             accuracy_score(samples['mask_type'], predictions)))
@@ -68,9 +71,8 @@ def test(model, dataloader, criterion, fold, current_sample, logger):
 
     logger.add_log(('validation', 'loss', fold),
                    (current_sample, running_loss / batch))
-    logger.add_log(
-        ('validation', 'accuracy', fold),
-        (current_sample, accuracy_score(ground_truth, predictions)))
+    logger.add_log(('validation', 'accuracy', fold),
+                   (current_sample, accuracy_score(ground_truth, predictions)))
 
 
 if __name__ == "__main__":
@@ -93,10 +95,12 @@ if __name__ == "__main__":
             criterion = torch.nn.CrossEntropyLoss()
 
             for epoch in range(n_epoches_kfolds):
-                train(model, dataloader_train, optimizer, criterion, fold, epoch,
-                      scheduler, logger)
-                current_sample = epoch*len(dataloader_train) + len(dataloader_train)
-                test(model, dataloader_validation, criterion, fold, current_sample, logger)
+                train(model, dataloader_train, optimizer, criterion, fold,
+                      epoch, scheduler, logger)
+                current_sample = epoch * len(dataloader_train) + len(
+                    dataloader_train)
+                test(model, dataloader_validation, criterion, fold,
+                     current_sample, logger)
         logger.plot_logs()
 
     else:

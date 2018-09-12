@@ -78,4 +78,5 @@ if __name__ == "__main__":
         plt.savefig('./postprocessing.png')
         """
         results_post_processed[image_name] = rle_encode(mask_post_processed)
-    write_results_file(results_post_processed, './predictions_post_processing.csv')
+    write_results_file(results_post_processed,
+                       './predictions_post_processing.csv')

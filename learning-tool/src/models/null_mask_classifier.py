@@ -40,7 +40,6 @@ class NullMaskClassifier(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.fc1(x)
 
-
         return x
 
     def get_predictions(self, outputs):

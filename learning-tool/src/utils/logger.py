@@ -24,14 +24,16 @@ class Logger():
         ax['loss'].set_yscale("log", nonposy='clip')
         ax['accuracy'] = fig.add_subplot(212)
         for log_type in ['loss', 'accuracy']:
-            for dataset, color in zip(['train', 'validation'], ['red', 'blue']):
+            for dataset, color in zip(['train', 'validation'],
+                                      ['red', 'blue']):
                 np_plot_values = None
                 for log_values in self.logs[dataset][log_type].values():
                     batches, plot_values = zip(*log_values)
                     if np_plot_values is None:
                         np_plot_values = np.asarray(plot_values)
                     else:
-                        np_plot_values = np.vstack((np_plot_values, np.asarray(plot_values)))
+                        np_plot_values = np.vstack((np_plot_values,
+                                                    np.asarray(plot_values)))
                     print(np_plot_values.shape)
 
                 x = np.asarray(batches)

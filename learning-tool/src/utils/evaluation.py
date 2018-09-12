@@ -4,6 +4,7 @@ from sklearn.metrics import jaccard_similarity_score
 import numpy as np
 import torch
 
+
 def get_iou_vector(A, B):
     batch_size = A.shape[0]
     thresholds = np.arange(0.5, 1, 0.05)
