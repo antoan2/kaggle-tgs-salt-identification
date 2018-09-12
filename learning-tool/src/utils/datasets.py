@@ -28,7 +28,6 @@ def getTgsDatasetTrainFolds(batch_size, n_folds):
 def getTgsDatasetTrain(batch_size, n_folds, validation_fold,
                        excluded_files=[]):
     dataset = TgsSaltDataset(
-        root_dir='/data',
         dataset='train',
         n_folds=n_folds,
         validation_fold=validation_fold,
@@ -49,7 +48,6 @@ def getTgsDatasetValidation(batch_size,
                             validation_fold,
                             excluded_files=[]):
     dataset = TgsSaltDataset(
-        root_dir='/data',
         dataset='validation',
         n_folds=n_folds,
         validation_fold=validation_fold,
@@ -63,7 +61,6 @@ def getTgsDatasetValidation(batch_size,
 
 def getTgsDatasetTest(batch_size):
     dataset = TgsSaltDataset(
-        root_dir='/data',
         dataset='test',
         transform=torchvision.transforms.Compose(
             [RefractBorders(), ToTensor()]))
