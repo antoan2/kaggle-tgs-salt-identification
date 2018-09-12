@@ -3,6 +3,7 @@
 import os
 import time
 import shutil
+import sys
 import random
 from collections import defaultdict
 
@@ -15,34 +16,54 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.nn.functional as F
 import torchvision.models as torch_models
 
-from utils.datasets import getTgsDataset
+from utils.datasets import getTgsDataset, getTgsDatasetTrain, getTgsDatasetValidation
 from utils.display import show_batch
 from utils.submission import create_submission_file
 from utils.evaluation import get_iou_vector
 
 from models.naive import Naive
 from models.linknet import LinkNet
+from models.unet import UNet
+from models.null_mask_classifier import NullMaskClassifier
 
 SUBMISSION = True
 
 if __name__ == "__main__":
 
-    dataset_train, dataloader_train = getTgsDataset('train', batch_size=16)
-    dataset_validation, dataloader_validation = getTgsDataset(
-        'validation', batch_size=16)
+    _, dataloader_train = getTgsDatasetTrain(16, 1, None)
+
+    null_mask_model = NullMaskClassifier()
+    null_mask_model.load_state_dict(torch.load('./null_mask_classifier.model'))
+    null_mask_model.cuda()
+    files_to_exclude = []
+    for samples in dataloader_train:
+        outputs = null_mask_model(samples['image'].cuda())
+        predictions = null_mask_model.get_predictions(outputs)
+        for sample_name, prediction in zip(samples['image_name'], predictions):
+            if prediction == 0:
+                files_to_exclude.append(sample_name)
+
+
+    _, dataloader_train = getTgsDatasetTrain(16, 1, None, excluded_files=files_to_exclude)
+    # 'validation', batch_size=16)
 
     if torch.cuda.is_available():
-        model = LinkNet(n_classes=2)
+        # model = LinkNet(n_classes=2)
+        model = UNet(n_channels=1, n_classes=2)
+    model.load_state_dict(torch.load('./segmentor.model'))
     model.cuda()
 
     print_period = 40
-    n_epoches = 10
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.3)
+    n_epoches = 40
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.3)
 
-    criterion = torch.nn.CrossEntropyLoss()
+    criterion = torch.nn.BCELoss()
+    _, dataloader_train = getTgsDatasetTrain(16, 10, 0, excluded_files=files_to_exclude)
+    _, dataloader_validation = getTgsDatasetValidation(16, 10, 0, excluded_files=files_to_exclude)
 
     for epoch in range(n_epoches):
         scheduler.step()
@@ -52,8 +73,17 @@ if __name__ == "__main__":
         for i, samples in enumerate(dataloader_train):
 
             outputs = model(samples['image'].cuda())
-            loss = criterion(outputs, samples['mask'].cuda().long())
-            model.zero_grad()
+            masks_probs = F.sigmoid(outputs)
+            masks_probs_flat = masks_probs.view(-1)
+            true_masks = samples['mask'][:, np.newaxis, ...].cuda()
+            true_masks = true_masks.repeat(1, 2, 1, 1)
+            true_masks[:, 1, ...] = 1 - true_masks[:, 0, ...]
+
+            true_masks_flat = true_masks.view(-1)
+
+            loss = criterion(masks_probs_flat, true_masks_flat)
+
+            optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             # print statistics
@@ -67,10 +97,7 @@ if __name__ == "__main__":
                 running_loss = 0.0
                 t_start = time.time()
 
-            predictions = []
-
-        predictions = model.get_predictions(outputs)
-        show_batch(samples, predictions[:, np.newaxis, ...])
+                predictions = model.get_predictions(outputs)
 
         scores = []
         for i, samples in enumerate(dataloader_validation):
@@ -87,4 +114,4 @@ if __name__ == "__main__":
         test_batch_size = 64
         dataset_test, dataloader_test = getTgsDataset(
             'test', batch_size=test_batch_size)
-        create_submission_file(model, dataloader_test)
+        create_submission_file(null_mask_model, model, dataloader_test)
