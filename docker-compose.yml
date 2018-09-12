@@ -3,6 +3,15 @@ services:
     learning-tool:
         build: learning-tool
         volumes:
-            - $PATH_DATA:/data
             - ./learning-tool/src:/opt/learning-tool
-            - $PATH_MODELS:/models
+            - $P_ORIGINAL_DATA:/original_data:ro
+            - $P_DATA:/data
+            - $P_MODELS:/models
+            - $P_RUNS:/runs
+    tensorboard:
+        image: tensorflow/tensorflow
+        command: tensorboard --logdir /runs --host 0.0.0.0
+        ports:
+            - "8888:6006"
+        volumes:
+            - $P_RUNS:/runs

@@ -18,10 +18,12 @@ from utils.logger import Logger
 
 from models.null_mask_classifier import NullMaskClassifier
 from sklearn.metrics import accuracy_score
+from tensorboardX import SummaryWriter
 
-PRINT_PERIOD = 40
-KFOLD_TRAINING = False
+PRINT_PERIOD = 100
+KFOLD_TRAINING = True
 
+TIMESTAMP = str(time.time())
 
 def train(model, dataloader, optimizer, criterion, fold, epoch, scheduler,
           logger):
@@ -37,21 +39,23 @@ def train(model, dataloader, optimizer, criterion, fold, epoch, scheduler,
         optimizer.step()
         # print statistics
         running_loss += loss.item()
-        if batch % PRINT_PERIOD == (
+        current_sample = epoch * len(dataloader) + batch
+        if current_sample % PRINT_PERIOD == (
                 PRINT_PERIOD - 1):  # print every 2000 mini-batches
             t_end = time.time()
-            print('[%d, %d] loss: %.3f elapsed time: %.3f' %
-                  (fold, epoch * len(dataloader) + batch + 1,
+            print('[%d, %d, %d] loss: %.3f elapsed time: %.3f' %
+                  (fold, epoch, current_sample,
                    running_loss / PRINT_PERIOD,
                    (t_end - t_start) / PRINT_PERIOD))
             predictions = model.get_predictions(outputs)
 
-            logger.add_log(
-                ('train', 'loss', fold),
-                (epoch * len(dataloader) + batch, running_loss / PRINT_PERIOD))
-            logger.add_log(('train', 'accuracy', fold),
-                           (epoch * len(dataloader) + batch,
-                            accuracy_score(samples['mask_type'], predictions)))
+            accuracy = accuracy_score(samples['mask_type'], predictions)
+            logger.add_scalar('data/train/loss',
+                              running_loss / PRINT_PERIOD,
+                              current_sample)
+            logger.add_scalar('data/train/accuracy',
+                              accuracy,
+                              current_sample)
 
             t_start = time.time()
             running_loss = 0.0
@@ -69,16 +73,18 @@ def test(model, dataloader, criterion, fold, current_sample, logger):
         ground_truth.extend(samples['mask_type'])
         running_loss += loss.item()
 
-    logger.add_log(('validation', 'loss', fold),
-                   (current_sample, running_loss / batch))
-    logger.add_log(('validation', 'accuracy', fold),
-                   (current_sample, accuracy_score(ground_truth, predictions)))
+    logger.add_scalar('data/test/loss',
+                      running_loss / batch,
+                      current_sample)
+    logger.add_scalar('data/test/accuracy',
+                      accuracy_score(ground_truth, predictions),
+                      current_sample)
 
 
 if __name__ == "__main__":
 
-    n_epoches_kfolds = 50
-    n_folds = 10
+    n_epoches_kfolds = 60
+    n_folds = 4
     n_epoches_train = 30
     batch_size = 16
 
@@ -86,6 +92,9 @@ if __name__ == "__main__":
         logger = Logger()
         for fold, (dataloader_train, dataloader_validation) in enumerate(
                 getTgsDatasetTrainFolds(batch_size, n_folds)):
+            writer = SummaryWriter(log_dir='/runs/experiment-{timestamp}-fold-{fold}'.format(
+                timestamp=TIMESTAMP,
+                fold=fold))
 
             model = NullMaskClassifier()
             model.cuda()
@@ -96,12 +105,13 @@ if __name__ == "__main__":
 
             for epoch in range(n_epoches_kfolds):
                 train(model, dataloader_train, optimizer, criterion, fold,
-                      epoch, scheduler, logger)
+                      epoch, scheduler, writer)
                 current_sample = epoch * len(dataloader_train) + len(
                     dataloader_train)
                 test(model, dataloader_validation, criterion, fold,
-                     current_sample, logger)
-        logger.plot_logs()
+                     current_sample, writer)
+            # logger.plot_logs()
+            writer.close()
 
     else:
         logger = Logger()
