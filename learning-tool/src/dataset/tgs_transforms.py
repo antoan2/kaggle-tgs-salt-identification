@@ -12,8 +12,8 @@ class RandomHorizontalFlip(object):
             image = sample['image']
             mask = sample['mask']
 
-            sample['image'] = np.flip(image, axis=0).copy()
-            sample['mask'] = np.flip(mask, axis=0).copy()
+            sample['image'] = sample['image'][:, ::-1]
+            sample['mask'] = sample['mask'][:, ::-1]
         return sample
 
 
@@ -23,8 +23,8 @@ class RandomVerticalFlip(object):
             image = sample['image']
             mask = sample['mask']
 
-            sample['image'] = np.flip(image, axis=1).copy()
-            sample['mask'] = np.flip(mask, axis=1).copy()
+            sample['image'] = sample['image'][::-1, :]
+            sample['mask'] = sample['mask'][::-1, :]
         return sample
 
 
@@ -45,7 +45,7 @@ class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
 
     def __call__(self, sample):
-        image, mask = sample['image'], sample['mask']
+        image, mask, mask_type = sample['image'], sample['mask'], sample['mask_type']
         image_name = sample['image_name']
 
         image = image - 125
@@ -56,7 +56,10 @@ class ToTensor(object):
         if mask is not None:
             mask = torch.from_numpy(mask).float()
             sample['mask'] = mask
+            mask_type = torch.from_numpy(np.array(mask_type)).float()
+            sample['mask_type'] = mask_type
             return sample
         else:
             sample.pop('mask')
+            sample.pop('mask_type')
             return sample

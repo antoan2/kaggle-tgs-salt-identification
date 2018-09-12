@@ -10,20 +10,26 @@ NUM_WORKERS=1
 
 def getTgsDataset(dataset, batch_size=16):
     if dataset == 'train':
-        return getTgsDatasetTrain(batch_size)
-    elif dataset == 'validation':
-        return getTgsDatasetValidation(batch_size)
+        return getTgsDatasetTrainFolds(batch_size, 10)
     elif dataset == 'test':
         return getTgsDatasetTest(batch_size)
 
+def getTgsDatasetTrainFolds(batch_size, n_folds):
+    for validation_fold in range(n_folds):
+        _, dataloader_train = getTgsDatasetTrain(batch_size, n_folds, validation_fold)
+        _, dataloader_validation = getTgsDatasetValidation(batch_size, n_folds, validation_fold)
+        yield (dataloader_train, dataloader_validation)
 
-def getTgsDatasetTrain(batch_size):
+def getTgsDatasetTrain(batch_size, n_folds, validation_fold, excluded_files=[]):
     dataset = TgsSaltDataset(
         root_dir='/data',
         dataset='train',
+        n_folds=n_folds,
+        validation_fold=validation_fold,
+        excluded_files=excluded_files,
         transform=torchvision.transforms.Compose([
             RandomHorizontalFlip(),
-            RandomVerticalFlip(),
+            # RandomVerticalFlip(),
             RefractBorders(),
             ToTensor()
         ]))
@@ -32,10 +38,13 @@ def getTgsDatasetTrain(batch_size):
     return dataset, dataloader
 
 
-def getTgsDatasetValidation(batch_size):
+def getTgsDatasetValidation(batch_size, n_folds, validation_fold, excluded_files=[]):
     dataset = TgsSaltDataset(
         root_dir='/data',
         dataset='validation',
+        n_folds=n_folds,
+        validation_fold=validation_fold,
+        excluded_files=excluded_files,
         transform=torchvision.transforms.Compose(
             [RefractBorders(), ToTensor()]))
     dataloader = torch.utils.data.DataLoader(

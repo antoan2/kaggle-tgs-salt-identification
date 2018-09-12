@@ -1,3 +1,5 @@
 ipython
+pydensecrf
 scikit-image
 tqdm
+jupyter
