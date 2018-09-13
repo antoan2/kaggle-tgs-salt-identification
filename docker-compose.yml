@@ -18,3 +18,17 @@ services:
             - "8888:6006"
         volumes:
             - $P_RUNS:/runs
+    notebook:
+        build: learning-tool
+        command: jupyter notebook --config='./notebooks/jupyter_config.py'
+        volumes:
+            - ./learning-tool/src:/opt/learning-tool
+            - $P_ORIGINAL_DATA:/original_data:ro
+            - $P_DATA:/data
+            - $P_MODELS:/models
+            - $P_MODEL_ZOO:/zoo
+            - $P_RUNS:/runs
+        ports:
+            - "8889:8889"
+        environment:
+            - TORCH_MODEL_ZOO=/zoo
