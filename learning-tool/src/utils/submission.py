@@ -7,7 +7,7 @@ from tqdm import tqdm
 def create_submission_file(null_mask_model,
                            model,
                            dataloader,
-                           p_file='./predictions.csv'):
+                           p_file='./outputs/predictions.csv'):
     results = {}
     for i, samples in tqdm(enumerate(dataloader)):
         outputs = null_mask_model(samples['image'].cuda())

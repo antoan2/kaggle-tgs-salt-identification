@@ -7,7 +7,10 @@ services:
             - $P_ORIGINAL_DATA:/original_data:ro
             - $P_DATA:/data
             - $P_MODELS:/models
+            - $P_MODEL_ZOO:/zoo
             - $P_RUNS:/runs
+        environment:
+            - TORCH_MODEL_ZOO=/zoo
     tensorboard:
         image: tensorflow/tensorflow
         command: tensorboard --logdir /runs --host 0.0.0.0

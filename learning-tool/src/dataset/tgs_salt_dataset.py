@@ -37,6 +37,7 @@ class TgsSaltDataset(torch.utils.data.Dataset):
 
         if dataset == 'test':
             self.p_images = self.p_test_images
+            self.p_masks = None
         else:
             self.p_images = self.p_train_images
             self.p_masks = self.p_train_masks
@@ -154,8 +155,6 @@ class TgsSaltDataset(torch.utils.data.Dataset):
         filename = self.index_to_filename[index]
         p_image = os.path.join(self.p_images,
                                '{filename}.png').format(filename=filename)
-        p_mask = os.path.join(self.p_masks,
-                              '{filename}.png').format(filename=filename)
 
         # We made the assumption that np.std(image, axis=2) == 0
         image = io.imread(p_image)
@@ -167,6 +166,8 @@ class TgsSaltDataset(torch.utils.data.Dataset):
             mask = None
             mask_type = None
         else:
+            p_mask = os.path.join(self.p_masks,
+                                  '{filename}.png').format(filename=filename)
             mask = io.imread(p_mask, as_gray=True)
             mask = mask.astype(np.float)
             mask[mask != 0] = 1.

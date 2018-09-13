@@ -8,9 +8,8 @@ class NullMaskClassifier(nn.Module):
     def __init__(self):
         super(NullMaskClassifier, self).__init__()
 
-        # base = resnet.resnet18(pretrained=True)
-        base = resnet.resnet18()
-        base.load_state_dict(torch.load('/models/resnet18-5c106cde.pth'))
+        base = resnet.resnet18(pretrained=True)
+
         conv1 = nn.Conv2d(1, 64, 7, stride=2, padding=3, bias=False)
         conv1.weight.data = base.conv1.weight[:, 0, ...].resize(64, 1, 7, 7)
         self.maxpool = base.maxpool
