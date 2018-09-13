@@ -7,3 +7,5 @@ COPY src/requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 COPY src .
+
+ENV PYTHONPATH "${PYTHONPATH}:/opt/learning-tool"

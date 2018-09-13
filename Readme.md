@@ -27,6 +27,7 @@ The Makefile contains the following commands:
     make format # format all python files using yapf
     make submit # submit the predictions to kaggle
     make tensorbard # instantiate a docker container running tensorboard accessible on localhost:8888
+    make notebook # instantiate a docker container running jupyter notebook accessible on localhost:8889 (password="tgschallenge")
 
 # Algorithm
 - The current pipeline is composed of:
