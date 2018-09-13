@@ -6,7 +6,8 @@ import torch
 from dataset.tgs_salt_dataset import TgsSaltDataset
 from dataset.tgs_transforms import ToTensor, RandomHorizontalFlip, RandomVerticalFlip, RefractBorders
 
-NUM_WORKERS=1
+NUM_WORKERS = 1
+
 
 def getTgsDataset(dataset, batch_size=16):
     if dataset == 'train':
@@ -14,15 +15,19 @@ def getTgsDataset(dataset, batch_size=16):
     elif dataset == 'test':
         return getTgsDatasetTest(batch_size)
 
+
 def getTgsDatasetTrainFolds(batch_size, n_folds):
     for validation_fold in range(n_folds):
-        _, dataloader_train = getTgsDatasetTrain(batch_size, n_folds, validation_fold)
-        _, dataloader_validation = getTgsDatasetValidation(batch_size, n_folds, validation_fold)
+        _, dataloader_train = getTgsDatasetTrain(batch_size, n_folds,
+                                                 validation_fold)
+        _, dataloader_validation = getTgsDatasetValidation(
+            batch_size, n_folds, validation_fold)
         yield (dataloader_train, dataloader_validation)
 
-def getTgsDatasetTrain(batch_size, n_folds, validation_fold, excluded_files=[]):
+
+def getTgsDatasetTrain(batch_size, n_folds, validation_fold,
+                       excluded_files=[]):
     dataset = TgsSaltDataset(
-        root_dir='/data',
         dataset='train',
         n_folds=n_folds,
         validation_fold=validation_fold,
@@ -38,9 +43,11 @@ def getTgsDatasetTrain(batch_size, n_folds, validation_fold, excluded_files=[]):
     return dataset, dataloader
 
 
-def getTgsDatasetValidation(batch_size, n_folds, validation_fold, excluded_files=[]):
+def getTgsDatasetValidation(batch_size,
+                            n_folds,
+                            validation_fold,
+                            excluded_files=[]):
     dataset = TgsSaltDataset(
-        root_dir='/data',
         dataset='validation',
         n_folds=n_folds,
         validation_fold=validation_fold,
@@ -54,7 +61,6 @@ def getTgsDatasetValidation(batch_size, n_folds, validation_fold, excluded_files
 
 def getTgsDatasetTest(batch_size):
     dataset = TgsSaltDataset(
-        root_dir='/data',
         dataset='test',
         transform=torchvision.transforms.Compose(
             [RefractBorders(), ToTensor()]))

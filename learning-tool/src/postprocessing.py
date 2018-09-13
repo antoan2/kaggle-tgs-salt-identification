@@ -63,19 +63,12 @@ def read_submission_file(path):
 
 
 if __name__ == "__main__":
-    results = read_submission_file('./predictions.csv')
+    results = read_submission_file('./outputs/predictions.csv')
     results_post_processed = {}
     for image_name, rle_code in tqdm(results.items()):
         mask = rle_decode(rle_code)
-        img = io.imread(os.path.join('/data/test/images', image_name + '.png'))
+        img = io.imread(os.path.join('/original_data/test/images', image_name + '.png'))
         mask_post_processed = crf(img, mask)
-        """
-        fig = plt.figure()
-        fig.add_subplot(121)
-        plt.imshow(mask)
-        fig.add_subplot(122)
-        plt.imshow(mask_post_processed)
-        plt.savefig('./postprocessing.png')
-        """
         results_post_processed[image_name] = rle_encode(mask_post_processed)
-    write_results_file(results_post_processed, './predictions_post_processing.csv')
+    write_results_file(results_post_processed,
+                       './outputs/predictions_post_processing.csv')

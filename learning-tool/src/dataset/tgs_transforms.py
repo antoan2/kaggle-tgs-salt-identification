@@ -45,7 +45,8 @@ class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
 
     def __call__(self, sample):
-        image, mask, mask_type = sample['image'], sample['mask'], sample['mask_type']
+        image, mask, mask_type = sample['image'], sample['mask'], sample[
+            'mask_type']
         image_name = sample['image_name']
 
         image = image - 125
