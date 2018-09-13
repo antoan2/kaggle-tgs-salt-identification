@@ -1,11 +1,11 @@
 build:
 	docker-compose build
 
+download-data:
+	kaggle competitions download -c tgs-salt-identification-challenge
+
 docker-bash:
 	docker-compose run --rm learning-tool /bin/bash
-
-run:
-	docker-compose run --rm learning-tool python main.py
 
 format:
 	yapf --in-place -r --verbose --exclude venv .
