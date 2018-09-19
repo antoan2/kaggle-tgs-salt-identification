@@ -4,9 +4,9 @@ from torch.autograd import Variable
 from torchvision.models import resnet
 
 
-class NullMaskClassifier(nn.Module):
+class Resnet18(nn.Module):
     def __init__(self):
-        super(NullMaskClassifier, self).__init__()
+        super(Resnet18, self).__init__()
 
         base = resnet.resnet18(pretrained=True)
 
