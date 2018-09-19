@@ -10,18 +10,24 @@ def create_submission_file(null_mask_model,
                            p_file='./outputs/predictions.csv'):
     results = {}
     for i, samples in tqdm(enumerate(dataloader)):
-        outputs = null_mask_model(samples['image'].cuda())
-        null_mask_predictions = null_mask_model.get_predictions(outputs)
 
         outputs = model(samples['image'].cuda()).detach()
         outputs = outputs[:, :, 14:-13, 14:-13]
-
         predictions = model.get_predictions(outputs)
+
+        if null_mask_model is not None:
+            outputs = null_mask_model(samples['image'].cuda())
+            null_mask_predictions = null_mask_model.get_predictions(outputs)
+        else:
+            null_mask_predictions = [1]*len(predictions)
+
         for j, null_mask_prediction in enumerate(null_mask_predictions):
             if null_mask_prediction == 0:
                 predictions[j, ...] = 0
+
         results_batch = get_encoded_results_batch(samples, predictions)
         results.update(results_batch)
+
     write_results_file(results, p_file)
 
 

@@ -4,8 +4,6 @@ import glob
 import torch
 import torch.nn as nn
 
-from .null_mask_classifier import NullMaskClassifier
-
 class ModelsEnsemble(nn.Module):
     def __init__(self, model_type, models=[]):
         super(ModelsEnsemble, self).__init__()
@@ -27,15 +25,15 @@ class ModelsEnsemble(nn.Module):
     def add_model(self, model):
         self.models.append(model)
 
-    def save(self, timestamp):
-        p_models = '/models/experiment-{timestamp}'.format(timestamp=timestamp)
+    def save(self, experiment_id):
+        p_models = '/models/{experiment_id}'.format(experiment_id=experiment_id)
         os.mkdir(p_models)
         for count, model in enumerate(self.models):
             torch.save(model.state_dict(), os.path.join(p_models, str(count) + '.pkl'))
 
 
-    def load(self, timestamp):
-        p_models = '/models/experiment-{timestamp}'.format(timestamp=timestamp)
+    def load(self, experiment_id):
+        p_models = '/models/{experiment_id}'.format(experiment_id=experiment_id)
         filenames = sorted(glob.glob(os.path.join(p_models, '*.pkl')))
         print(filenames)
         self.models = []
