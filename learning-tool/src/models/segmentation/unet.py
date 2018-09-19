@@ -6,7 +6,7 @@ from torchvision import transforms
 
 
 class UNet(nn.Module):
-    def __init__(self, n_channels, n_classes):
+    def __init__(self, num_classes, n_channels=3):
         super(UNet, self).__init__()
         self.inc = inconv(n_channels, 64)
         self.down1 = down(64, 128)
@@ -17,7 +17,7 @@ class UNet(nn.Module):
         self.up2 = up(512, 128)
         self.up3 = up(256, 64)
         self.up4 = up(128, 64)
-        self.outc = outconv(64, n_classes)
+        self.outc = outconv(64, num_classes)
 
     def forward(self, x):
         x1 = self.inc(x)
@@ -30,8 +30,7 @@ class UNet(nn.Module):
         x = self.up3(x, x2)
         x = self.up4(x, x1)
         x = self.outc(x)
-        x = F.sigmoid(x)
         return x
 
     def get_predictions(self, outputs):
-        return outputs[:, 0, ...] > outputs[:, 1, ...]
+        return outputs[:, 1, ...] > outputs[:, 0, ...]

@@ -50,7 +50,7 @@ class ToTensor(object):
         image_name = sample['image_name']
 
         image = image - 125
-        image = image[np.newaxis, ...]
+        image = np.repeat(image[np.newaxis, ...], 3, axis=0)
         image = torch.from_numpy(image).float()
         sample['image'] = image
 

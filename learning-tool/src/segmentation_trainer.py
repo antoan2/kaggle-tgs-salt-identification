@@ -28,8 +28,9 @@ from utils.submission import create_submission_file
 from utils.evaluation import get_iou_vector
 
 from models.segmentation import models as seg_models
-from models.null_mask_classifier import models as nmc_models
+from models.null_mask_classifiers import models as nmc_models
 from models.models_ensemble import ModelsEnsemble
+from losses.lovasz_losses import lovasz_softmax
 
 from tensorboardX import SummaryWriter
 
@@ -37,7 +38,6 @@ SUBMISSION = True
 PRINT_PERIOD = 100
 TIMESTAMP = str(time.time())
 NULL_MASK_TIMESTAMP = '1536770553.9598353'
-
 
 
 def parse_null_mask_classifier_model(experiment_id):
@@ -53,6 +53,7 @@ def load_null_mask_classifier(experiment_id):
     null_mask_model.cuda()
     return null_mask_model
 
+
 def get_files_to_exclude(null_mask_classifier, dataloader):
     files_to_exclude = []
     for samples in tqdm(dataloader):
@@ -63,25 +64,20 @@ def get_files_to_exclude(null_mask_classifier, dataloader):
                 files_to_exclude.append(sample_name)
     return files_to_exclude
 
-def get_flat_ground_truth(samples_mask):
-    true_masks = samples_mask[:, np.newaxis, ...].cuda()
-    true_masks = true_masks.repeat(1, 2, 1, 1)
-    true_masks[:, 1, ...] = 1 - true_masks[:, 0, ...]
-    return true_masks.view(-1)
 
 def train(model, dataloader, optimizer, criterion, epoch, scheduler, writer):
     scheduler.step()
     running_loss = 0.0
     t_start = time.time()
     for batch, samples in enumerate(dataloader):
+        optimizer.zero_grad()
 
         outputs = model(samples['image'].cuda())
+        output_probabilities = F.softmax(outputs, dim=1)
 
-        masks_probs_flat = outputs.view(-1)
-        true_masks_flat = get_flat_ground_truth(samples['mask'])
-        loss = criterion(masks_probs_flat, true_masks_flat)
+        loss = criterion(
+            output_probabilities, samples['mask'].cuda(), ignore=255)
 
-        optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         # print statistics
@@ -99,25 +95,27 @@ def train(model, dataloader, optimizer, criterion, epoch, scheduler, writer):
             masks = samples['mask'].cpu().numpy()
             masks = masks[:, 14:-13, 14:-13]
 
-            writer.add_scalar('/data/train/loss',
-                              running_loss / PRINT_PERIOD, current_sample)
-            writer.add_scalar(
-                '/data/train/accuracy',
-                get_iou_vector(masks,
-                               predictions.cpu().numpy()), current_sample)
+            writer.add_scalar('/data/train/loss', running_loss / PRINT_PERIOD,
+                              current_sample)
+            writer.add_scalar('/data/train/accuracy',
+                              get_iou_vector(masks,
+                                             predictions.cpu().numpy()),
+                              current_sample)
+            writer.add_scalar('/data/train/learning_rate', optimizer.param_groups[0]['lr'],
+                              current_sample)
+
             running_loss = 0.0
             t_start = time.time()
+
 
 def test(model, dataloader, criterion, current_sample, writer):
     scores = []
     running_loss = 0
     for batch, samples in enumerate(dataloader):
         outputs = model(samples['image'].cuda()).detach()
+        output_probabilities = F.softmax(outputs, dim=1)
 
-        masks_probs_flat = outputs.view(-1)
-        true_masks_flat = get_flat_ground_truth(samples['mask'])
-
-        loss = criterion(masks_probs_flat, true_masks_flat)
+        loss = criterion(output_probabilities, samples['mask'].cuda())
         running_loss += loss.item()
 
         outputs = outputs[:, :, 14:-13, 14:-13]
@@ -130,9 +128,7 @@ def test(model, dataloader, criterion, current_sample, writer):
 
     writer.add_scalar('/data/test/loss', running_loss / (batch + 1),
                       current_sample)
-    writer.add_scalar('/data/test/accuracy', np.mean(scores),
-                      current_sample)
-
+    writer.add_scalar('/data/test/accuracy', np.mean(scores), current_sample)
 
 
 def parse_args():
@@ -154,13 +150,24 @@ def parse_args():
         type=int,
         help='number of epoches to train the model')
     parser.add_argument(
-        '--learnin_rate',
+        '--decay_step',
+        default=10,
+        type=int,
+        help='step for learning_rate decay')
+    parser.add_argument(
+        '--decay_gamma',
+        default=0.3,
+        type=float,
+        help='gamma for learning_rate decay')
+    parser.add_argument(
+        '--learning_rate',
         default=0.01,
         type=float,
         help='starting learning rate')
     parser.add_argument(
         '--batch_size', default=16, type=int, help='size of the batch')
     return parser.parse_args()
+
 
 def check_model(value):
     if value not in seg_models:
@@ -169,24 +176,31 @@ def check_model(value):
             (value, str(seg_models.keys())))
     return value
 
+
 def create_experiment_id(args):
     timestamp = str(time.time())
     id_parts = ['segmentation']
     id_parts.extend(('model', args.model))
     id_parts.extend(('epoches', args.n_epoches))
-    id_parts.extend(('lr', args.learnin_rate))
+    id_parts.extend(('lr', args.learning_rate))
     id_parts.extend(('batch_size', args.batch_size))
+    id_parts.extend(('decay_step', args.decay_step))
+    id_parts.extend(('decay_gamma', args.decay_gamma))
     id_parts.extend(('timestamp', timestamp))
     return '-'.join([str(id_part) for id_part in id_parts])
 
+
 def main(args):
     experiment_id = create_experiment_id(args)
-    print('Experiment running is: {experiment_id}'.format(experiment_id=experiment_id))
+    print('Experiment running is: {experiment_id}'.format(
+        experiment_id=experiment_id))
 
     if args.null_mask_classifier is not None:
-        null_mask_classifier = load_null_mask_classifier(args.null_mask_classifier)
+        null_mask_classifier = load_null_mask_classifier(
+            args.null_mask_classifier)
         _, dataloader_train = getTgsDatasetTrain(args.batch_size, 1, None)
-        files_to_exclude = get_files_to_exclude(null_mask_classifier, dataloader_train)
+        files_to_exclude = get_files_to_exclude(null_mask_classifier,
+                                                dataloader_train)
     else:
         null_mask_classifier = None
         files_to_exclude = []
@@ -197,23 +211,25 @@ def main(args):
         args.batch_size, 1, None, excluded_files=files_to_exclude)
 
     if torch.cuda.is_available():
-        model = seg_models[args.model](n_channels=1, n_classes=2)
+        model = seg_models[args.model](num_classes=2)
     model.cuda()
 
     n_epoches = args.n_epoches
-    optimizer = optim.Adam(model.parameters(), lr=args.learnin_rate)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.3)
+    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
+    scheduler = optim.lr_scheduler.StepLR(
+        optimizer, step_size=args.decay_step, gamma=args.decay_gamma)
+    # criterion = torch.nn.BCELoss()
+    criterion = lovasz_softmax
 
-    criterion = torch.nn.BCELoss()
     _, dataloader_train = getTgsDatasetTrain(
         args.batch_size, 10, 0, excluded_files=files_to_exclude)
     _, dataloader_validation = getTgsDatasetValidation(
         args.batch_size, 10, 0, excluded_files=files_to_exclude)
 
     for epoch in range(n_epoches):
-        train(model, dataloader_train, optimizer,criterion, epoch, scheduler, writer)
-        current_sample = epoch * len(dataloader_train) + len(
-            dataloader_train)
+        train(model, dataloader_train, optimizer, criterion, epoch, scheduler,
+              writer)
+        current_sample = epoch * len(dataloader_train) + len(dataloader_train)
         test(model, dataloader_validation, criterion, current_sample, writer)
 
     # Saving model
@@ -222,17 +238,22 @@ def main(args):
     torch.save(model.state_dict(), os.path.join(p_model, '0.pkl'))
 
     if args.submission == True:
-        model = seg_models[args.model](n_channels=1, n_classes=2)
+        model = seg_models[args.model](num_classes=2)
         model.load_state_dict(torch.load(os.path.join(p_model, '0.pkl')))
         model.cuda()
         # Create prediction file
         test_batch_size = args.batch_size
         dataset_test, dataloader_test = getTgsDataset(
             'test', batch_size=test_batch_size)
-        create_submission_file(null_mask_classifier, model, dataloader_test,
-                p_file=os.path.join('./outputs', experiment_id + '.csv'))
+        create_submission_file(
+            null_mask_classifier,
+            model,
+            dataloader_test,
+            p_file=os.path.join('./outputs', experiment_id + '.csv'))
 
-    print('Experiment finishing is: {experiment_id}'.format(experiment_id=experiment_id))
+    print('Experiment finishing is: {experiment_id}'.format(
+        experiment_id=experiment_id))
+
 
 if __name__ == "__main__":
 

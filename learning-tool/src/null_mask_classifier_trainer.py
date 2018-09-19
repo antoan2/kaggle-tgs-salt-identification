@@ -92,7 +92,7 @@ def main(args):
 
         model = model_type()
         model.cuda()
-        optimizer = optim.Adam(model.parameters(), lr=args.learnin_rate)
+        optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
         scheduler = optim.lr_scheduler.StepLR(
             optimizer, step_size=10, gamma=0.3)
 
@@ -130,7 +130,7 @@ def parse_args():
         type=int,
         help='number of epoches to train the model')
     parser.add_argument(
-        '--learnin_rate',
+        '--learning_rate',
         default=0.01,
         type=float,
         help='starting learning rate')
@@ -152,7 +152,7 @@ def create_experiment_id(args):
     id_parts.extend(('model', args.model))
     id_parts.extend(('n_folds', args.n_folds))
     id_parts.extend(('epoches', args.n_epoches))
-    id_parts.extend(('lr', args.learnin_rate))
+    id_parts.extend(('lr', args.learning_rate))
     id_parts.extend(('batch_size', args.batch_size))
     id_parts.extend(('timestamp', timestamp))
     return '-'.join([str(id_part) for id_part in id_parts])
