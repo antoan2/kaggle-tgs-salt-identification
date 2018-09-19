@@ -58,6 +58,7 @@ You can also run the `docker-compose run --rm learning-tool` commands directly i
 - Write a small notebook to explain first dataset transform
     - check if assumption np.sum(np.std(image, axis=2) == 0) is always True
 - Add saving predictions of the null_mask_classifier model on the train set
-- Train using https://www.kdnuggets.com/2017/08/train-deep-learning-faster-snapshot-ensembling.html
-- Add ArgumentParsing (and json loader)
-- Create module and model factories
+[] Train using https://www.kdnuggets.com/2017/08/train-deep-learning-faster-snapshot-ensembling.html
+[x] Add ArgumentParsing (and json loader)
+[x] Create module and model factories
+[] Complete kaggle submit instruction

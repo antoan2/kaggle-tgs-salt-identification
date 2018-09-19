@@ -90,7 +90,7 @@ class UNet11(nn.Module):
         return self.final(dec1)
 
     def get_predictions(self, outputs):
-        return outputs[:, 0, ...] > outputs[:, 1, ...]
+        return outputs.argmax(dim=1)
 
 def unet11(pretrained=False, **kwargs):
     """
@@ -207,7 +207,7 @@ class AlbuNet(nn.Module):
         return self.final(dec0)
 
     def get_predictions(self, outputs):
-        return outputs[:, 0, ...] > outputs[:, 1, ...]
+        return outputs.argmax(dim=1)
 
 
 class UNet16(nn.Module):
@@ -290,4 +290,4 @@ class UNet16(nn.Module):
         return self.final(dec1)
 
     def get_predictions(self, outputs):
-        return outputs[:, 0, ...] > outputs[:, 1, ...]
+        return outputs.argmax(dim=1)

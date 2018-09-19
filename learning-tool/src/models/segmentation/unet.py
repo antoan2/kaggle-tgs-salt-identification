@@ -33,4 +33,4 @@ class UNet(nn.Module):
         return x
 
     def get_predictions(self, outputs):
-        return outputs[:, 0, ...] > outputs[:, 1, ...]
+        return outputs[:, 1, ...] > outputs[:, 0, ...]
