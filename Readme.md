@@ -21,6 +21,7 @@ Download the competion data:
     make download-data
 
 # Usage
+## Makefile commands
 The Makefile contains the following commands:
 
     make docker-bash # instantiate a bash session from the learning-tool image
@@ -29,6 +30,23 @@ The Makefile contains the following commands:
     make tensorbard # instantiate a docker container running tensorboard accessible on localhost:8888
     make notebook # instantiate a docker container running jupyter notebook accessible on localhost:8889 (password="tgschallenge")
 
+## Typical workflow
+A typical workflow will look like the following
+
+    make tensorbard # to get logs
+    docker-compose run --rm learning-tool python3 null_mask_classifier_trainer.py \
+        --model Resnet18 \
+        --n_folds 4 \
+        --n_epoches 40
+    docker-compose run --rm learning-tool python3 segmentaion_trainer.py \
+        --model UNet \
+        --n_epoches 60 \
+        --null_mask_classifier null_mask_classifier-model-Resnet18-n_folds-1-epoches-2-lr-0.01-batch_size-16-timestamp-1537346155.162557
+    docker-compose run --rm learning-tool python3 postprocessing.py \
+        --input_file segmentation-model-UNet-epoches-1-lr-0.01-batch_size-16-timestamp-1537347431.518587.csv
+    make submit segmentation-model-UNet-epoches-1-lr-0.01-batch_size-16-timestamp-1537347431.518587_post_processing.csv
+
+You can also run the `docker-compose run --rm learning-tool` commands directly in a container bash / ipython by using the `make docker-bash` command.
 # Algorithm
 - The current pipeline is composed of:
     - an ensemble of resnet18 that predicts if the image as salt in it (ModelsEnsemble(NullMaskClassifier))
