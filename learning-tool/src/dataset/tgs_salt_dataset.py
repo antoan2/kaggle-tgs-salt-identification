@@ -156,7 +156,6 @@ class TgsSaltDataset(torch.utils.data.Dataset):
         p_image = os.path.join(self.p_images,
                                '{filename}.png').format(filename=filename)
 
-        # We made the assumption that np.std(image, axis=2) == 0
         image = io.imread(p_image)
         image = image.astype(np.float)
         image = image[:, :, 0]

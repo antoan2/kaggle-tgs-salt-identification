@@ -10,8 +10,7 @@ class Resnet18(nn.Module):
 
         base = resnet.resnet18(pretrained=True)
 
-        conv1 = nn.Conv2d(1, 64, 7, stride=2, padding=3, bias=False)
-        conv1.weight.data = base.conv1.weight[:, 0, ...].resize(64, 1, 7, 7)
+        conv1 = base.conv1
         self.maxpool = base.maxpool
 
         self.in_block = nn.Sequential(conv1, base.bn1, base.relu, base.maxpool)
