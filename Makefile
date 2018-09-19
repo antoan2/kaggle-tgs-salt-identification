@@ -16,7 +16,12 @@ submit: ./learning-tool/src/predictions.csv
 	kaggle competitions submit -f /tmp/predictions.csv.gz -m "$(date)" -c tgs-salt-identification-challenge
 	rm /tmp/predictions.csv.gz
 
-tensorbard:
+tensorboard:
 	docker-compose stop tensorboard
 	docker-compose rm -f tensorboard
 	docker-compose up -d tensorboard
+
+notebook:
+	docker-compose stop notebook
+	docker-compose rm -f notebook
+	docker-compose up -d notebook
