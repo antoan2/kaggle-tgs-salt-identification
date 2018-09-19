@@ -1,3 +1,4 @@
+import argparse
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -62,13 +63,25 @@ def read_submission_file(path):
     return results
 
 
-if __name__ == "__main__":
-    results = read_submission_file('./outputs/predictions.csv')
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--input_file',
+        type=str,
+        help='Path to the predictions file')
+    return parser.parse_args()
+
+def main(args):
+    results = read_submission_file(args.input_file)
     results_post_processed = {}
     for image_name, rle_code in tqdm(results.items()):
         mask = rle_decode(rle_code)
         img = io.imread(os.path.join('/original_data/test/images', image_name + '.png'))
         mask_post_processed = crf(img, mask)
         results_post_processed[image_name] = rle_encode(mask_post_processed)
-    write_results_file(results_post_processed,
-                       './outputs/predictions_post_processing.csv')
+    p_output_file = os.path.splitext(args.input_file)[0] + '_post_processing.csv'
+    write_results_file(results_post_processed, p_output_file)
+
+if __name__ == "__main__":
+    args = parse_args()
+    main(args)
