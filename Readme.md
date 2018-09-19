@@ -40,4 +40,5 @@ The Makefile contains the following commands:
     - check if assumption np.sum(np.std(image, axis=2) == 0) is always True
 - Add saving predictions of the null_mask_classifier model on the train set
 - Train using https://www.kdnuggets.com/2017/08/train-deep-learning-faster-snapshot-ensembling.html
-- Add ArgumentParsing
+- Add ArgumentParsing (and json loader)
+- Create module and model factories
