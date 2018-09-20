@@ -26,6 +26,7 @@ from utils.datasets import getTgsDataset, getTgsDatasetTrain, getTgsDatasetValid
 from utils.display import show_batch
 from utils.submission import create_submission_file
 from utils.evaluation import get_iou_vector
+from utils.optimizer_factory import optimizers
 
 from models.segmentation import models as seg_models
 from models.null_mask_classifiers import models as nmc_models
@@ -165,9 +166,21 @@ def parse_args():
         type=float,
         help='starting learning rate')
     parser.add_argument(
+        '--optimizer',
+        default='Adam',
+        type=check_optimizer,
+        help='optimizer to use')
+    parser.add_argument(
         '--batch_size', default=16, type=int, help='size of the batch')
     return parser.parse_args()
 
+
+def check_optimizer(value):
+    if value not in optimizers:
+        raise argparse.ArgumentTypeError(
+            '%s is not a valid model type. Valid model types are %s' %
+            (value, str(optimizers.keys())))
+    return value
 
 def check_model(value):
     if value not in seg_models:
@@ -176,11 +189,11 @@ def check_model(value):
             (value, str(seg_models.keys())))
     return value
 
-
 def create_experiment_id(args):
     timestamp = str(time.time())
     id_parts = ['segmentation']
     id_parts.extend(('model', args.model))
+    id_parts.extend(('optimizer', args.optimizer))
     id_parts.extend(('epoches', args.n_epoches))
     id_parts.extend(('lr', args.learning_rate))
     id_parts.extend(('batch_size', args.batch_size))
@@ -215,7 +228,7 @@ def main(args):
     model.cuda()
 
     n_epoches = args.n_epoches
-    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
+    optimizer = optimizers[args.optimizer](model.parameters(), lr=args.learning_rate)
     scheduler = optim.lr_scheduler.StepLR(
         optimizer, step_size=args.decay_step, gamma=args.decay_gamma)
     # criterion = torch.nn.BCELoss()
