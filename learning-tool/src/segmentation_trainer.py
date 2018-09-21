@@ -24,7 +24,6 @@ import torchvision.models as torch_models
 
 from utils.datasets import getTgsDataset, getTgsDatasetTrain, getTgsDatasetValidation
 from utils.display import show_batch
-from utils.submission import create_submission_file
 from utils.evaluation import get_iou_vector
 from utils.optimizer_factory import optimizers
 
@@ -249,20 +248,6 @@ def main(args):
     p_model = os.path.join('/models', experiment_id)
     os.mkdir(p_model)
     torch.save(model.state_dict(), os.path.join(p_model, '0.pkl'))
-
-    if args.submission == True:
-        model = seg_models[args.model](num_classes=2)
-        model.load_state_dict(torch.load(os.path.join(p_model, '0.pkl')))
-        model.cuda()
-        # Create prediction file
-        test_batch_size = args.batch_size
-        dataset_test, dataloader_test = getTgsDataset(
-            'test', batch_size=test_batch_size)
-        create_submission_file(
-            null_mask_classifier,
-            model,
-            dataloader_test,
-            p_file=os.path.join('./outputs', experiment_id + '.csv'))
 
     print('Experiment finishing is: {experiment_id}'.format(
         experiment_id=experiment_id))
