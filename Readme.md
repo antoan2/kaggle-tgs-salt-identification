@@ -36,8 +36,10 @@ A typical workflow will look like the following
     make tensorbard # to get logs
     docker-compose run --rm learning-tool python3 null_mask_classifier_trainer.py \
         --model Resnet18 \
-        --n_folds 4 \
-        --n_epoches 40
+        --n_epoches 40 \
+        --t_max 10 \
+        --learning_rate 0.01 \
+        --min_learning_rate 0.00001
     docker-compose run --rm learning-tool python3 segmentaion_trainer.py \
         --model UNet \
         --n_epoches 60 \
