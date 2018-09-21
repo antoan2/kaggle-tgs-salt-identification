@@ -4,43 +4,27 @@ import numpy as np
 from tqdm import tqdm
 
 
-def create_submission_file(null_mask_model,
-                           model,
-                           dataloader,
-                           p_file='./outputs/predictions.csv'):
+def create_null_mask_classifier_predictions_file(files, files_to_exclude,
+                                                 p_file):
     results = {}
-    for i, samples in tqdm(enumerate(dataloader)):
-
-        outputs = model(samples['image'].cuda()).detach()
-        outputs = outputs[:, :, 14:-13, 14:-13]
-        predictions = model.get_predictions(outputs)
-
-        if null_mask_model is not None:
-            outputs = null_mask_model(samples['image'].cuda())
-            null_mask_predictions = null_mask_model.get_predictions(outputs)
+    for filename in files:
+        if filename in files_to_exclude:
+            results[filename] = ''
         else:
-            null_mask_predictions = [1]*len(predictions)
-
-        for j, null_mask_prediction in enumerate(null_mask_predictions):
-            if null_mask_prediction == 0:
-                predictions[j, ...] = 0
-
-        results_batch = get_encoded_results_batch(samples, predictions)
-        results.update(results_batch)
-
+            results[filename] = '1 1'
     write_results_file(results, p_file)
 
+def get_encoded_results(results, files_to_exclude=[]):
+    encoded_results = {}
+    for sample_name, prediction in tqdm(results.items()):
+        if sample_name in files_to_exclude:
+            encoded_results[sample_name] = ''
+        else:
+            encoded_results[sample_name] = get_encoded_result(prediction)
+    return encoded_results
 
-def get_encoded_results_batch(samples, predictions):
-    results = {}
-    for i, (image_name, prediction) in enumerate(
-            zip(samples['image_name'], predictions)):
-        results[image_name] = get_encoded_results(prediction)
-    return results
-
-
-def get_encoded_results(prediction):
-    rle_code = rle_encode(prediction.cpu().numpy())
+def get_encoded_result(prediction):
+    rle_code = rle_encode(prediction)
     return rle_code
 
 

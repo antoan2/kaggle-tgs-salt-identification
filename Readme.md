@@ -42,9 +42,12 @@ A typical workflow will look like the following
         --model UNet \
         --n_epoches 60 \
         --null_mask_classifier null_mask_classifier-model-Resnet18-n_folds-1-epoches-2-lr-0.01-batch_size-16-timestamp-1537346155.162557
-    docker-compose run --rm learning-tool python3 postprocessing.py \
-        --input_file segmentation-model-UNet-epoches-1-lr-0.01-batch_size-16-timestamp-1537347431.518587.csv
-    make submit segmentation-model-UNet-epoches-1-lr-0.01-batch_size-16-timestamp-1537347431.518587_post_processing.csv
+    docker-compose run --rm learning-tool python3 submission.py \
+        -nmc null_mask_classifier-model-Resnet18-n_folds-1-epoches-2-lr-0.01-batch_size-16-timestamp-1537346155.162557 \
+        -seg segmentation-model-UNet-epoches-1-lr-0.01-batch_size-16-timestamp-1537347431.518587.csv \
+        -p
+    cp ./learning-tool/src/submission_script.sh .
+    bash ./submission_script.sh # It will submit up to 5 files (this is the competition limit, so you can first edit this file)
 
 You can also run the `docker-compose run --rm learning-tool` commands directly in a container bash / ipython by using the `make docker-bash` command.
 # Algorithm

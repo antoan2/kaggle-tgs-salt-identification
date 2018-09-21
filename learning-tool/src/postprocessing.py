@@ -71,14 +71,19 @@ def parse_args():
         help='Path to the predictions file')
     return parser.parse_args()
 
-def main(args):
-    results = read_submission_file(args.input_file)
+def post_process(results):
     results_post_processed = {}
     for image_name, rle_code in tqdm(results.items()):
         mask = rle_decode(rle_code)
         img = io.imread(os.path.join('/original_data/test/images', image_name + '.png'))
         mask_post_processed = crf(img, mask)
         results_post_processed[image_name] = rle_encode(mask_post_processed)
+    return results_post_processed
+
+
+def main(args):
+    results = read_submission_file(args.input_file)
+    results_post_processed = post_process(results)
     p_output_file = os.path.splitext(args.input_file)[0] + '_post_processing.csv'
     write_results_file(results_post_processed, p_output_file)
 
