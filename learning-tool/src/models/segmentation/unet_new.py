@@ -144,7 +144,7 @@ class AlbuNet(nn.Module):
 
         """
 
-    def __init__(self, num_classes=1, num_filters=32, pretrained=False, is_deconv=False):
+    def __init__(self, num_classes=1, num_filters=32, pretrained=True, is_deconv=False):
         """
         :param num_classes:
         :param num_filters:
