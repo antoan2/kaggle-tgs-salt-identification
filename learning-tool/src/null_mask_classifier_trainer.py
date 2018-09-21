@@ -140,7 +140,7 @@ def main(args):
     writer.close()
     models_ensemble.save(experiment_id)
 
-    final_loss, final_accuracy = test_final_model(model, dataloader_validation,
+    final_loss, final_accuracy = test_final_model(models_ensemble, dataloader_validation,
                                                   criterion)
     print('Experiment finishing is: {experiment_id}'.format(
         experiment_id=experiment_id))
