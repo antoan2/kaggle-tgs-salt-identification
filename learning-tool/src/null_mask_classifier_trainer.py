@@ -27,7 +27,7 @@ from lr_schedulers.cosinus_annealing_lr_with_restart import CosineAnnealingLRWit
 PRINT_PERIOD = 50
 
 
-def train(model, dataloader, optimizer, criterion, epoch, scheduler, writer):
+def train(model, dataloader, optimizer, criterion, epoch, writer):
     running_loss = 0.0
     t_start = time.time()
     for batch, samples in enumerate(dataloader):
@@ -129,16 +129,18 @@ def main(args):
 
         snapshot_to_be_saved = scheduler.step()
 
-        train(model, dataloader_train, optimizer, criterion, epoch, scheduler,
-              writer)
+        train(model, dataloader_train, optimizer, criterion, epoch, writer)
         current_sample = epoch * len(dataloader_train) + len(dataloader_train)
         test(model, dataloader_validation, criterion, current_sample, writer)
 
         if snapshot_to_be_saved:
             print('saving model')
+            print('n_models', len(models_ensemble.models))
             models_ensemble.add_model(model)
     writer.close()
+    print('n_models', len(models_ensemble.models))
     models_ensemble.save(experiment_id)
+    print('n_models', len(models_ensemble.models))
 
     final_loss, final_accuracy = test_final_model(models_ensemble, dataloader_validation,
                                                   criterion)
