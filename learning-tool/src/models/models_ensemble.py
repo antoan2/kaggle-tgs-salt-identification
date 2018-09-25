@@ -5,10 +5,11 @@ import torch
 import torch.nn as nn
 
 class ModelsEnsemble(nn.Module):
-    def __init__(self, model_type, models=[]):
+    def __init__(self, model_type, **kwargs):
         super(ModelsEnsemble, self).__init__()
         self.model_type = model_type
-        self.models = models
+        self.models = []
+        self.kwargs = kwargs
 
     def forward(self, x):
         outputs_to_stack = []
@@ -38,10 +39,15 @@ class ModelsEnsemble(nn.Module):
         print(filenames)
         self.models = []
         for filename in filenames:
-            model = self.model_type()
+            model = self.model_type(**self.kwargs)
             model.load_state_dict(torch.load(filename))
             self.models.append(model)
 
     def cuda(self):
         for model in self.models:
             model.cuda()
+
+    def no_grad(self):
+        for model in self.models:
+            for param in model.parameters():
+                param.requires_grad = False

@@ -53,7 +53,7 @@ def create_submission_script(generated_files):
         file_id.write('set -ex\n')
         for kaggle_cmd in kaggle_cmds:
             file_id.write(kaggle_cmd)
-            file_id.write('\n')
+            file_id.write('\n\n')
 
 def exclude_files(results, files_to_exclude):
     filtered_results = {}

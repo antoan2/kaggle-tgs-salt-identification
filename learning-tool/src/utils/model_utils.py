@@ -11,42 +11,45 @@ from models.segmentation import models as seg_models
 
 
 def parse_segmentation_model(experiment_id):
-    experiment_id = experiment_id.replace('segmentation-model-', '')
+    experiment_id = experiment_id.replace('seg-model-', '')
     model_type = experiment_id.split('-')[0]
     return model_type
 
 
-def load_segmentation(experiment_id):
+def load_segmentation(experiment_id, no_grad=True):
     model_type = parse_segmentation_model(experiment_id)
-    segmentation = seg_models[model_type](num_classes=2)
-    p_model = os.path.join('/models', experiment_id, '0.pkl')
-    print(p_model)
-    segmentation.load_state_dict(torch.load(p_model))
+    segmentation = ModelsEnsemble(seg_models[model_type], num_classes=2)
+    segmentation.load(experiment_id)
+    if no_grad == True:
+        segmentation.no_grad()
     segmentation.cuda()
     return segmentation
 
 
 def parse_null_mask_classifier_model(experiment_id):
-    experiment_id = experiment_id.replace('null_mask_classifier-model-', '')
+    experiment_id = experiment_id.replace('nmc-model-', '')
     model_type = experiment_id.split('-')[0]
     return model_type
 
 
-def load_null_mask_classifier(experiment_id):
+def load_null_mask_classifier(experiment_id, no_grad=True):
     model_type = parse_null_mask_classifier_model(experiment_id)
     null_mask_model = ModelsEnsemble(nmc_models[model_type])
     null_mask_model.load(experiment_id)
+    if no_grad == True:
+        null_mask_model.no_grad()
     null_mask_model.cuda()
     return null_mask_model
 
 
 def apply_model(model, dataloader):
-    results = {}
-    for samples in tqdm(dataloader):
-        outputs = model(samples['image'].cuda())
-        predictions = model.get_predictions(outputs).cpu().numpy()
-        for sample_name, prediction in zip(samples['image_name'], predictions):
-            results[sample_name] = prediction
+    with torch.no_grad():
+        results = {}
+        for samples in tqdm(dataloader):
+            outputs = model(samples['image'].cuda())
+            predictions = model.get_predictions(outputs).cpu().numpy()
+            for sample_name, prediction in zip(samples['image_name'], predictions):
+                results[sample_name] = prediction
     return results
 
 
